@@ -4,18 +4,33 @@ const bcrypt   = require('bcryptjs');
 const path     = require('path');
  
 const app  = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const ADMIN_KEY = process.env.ADMIN_KEY || 'yousef77';
  
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/login-app';
- 
-mongoose.connect(MONGO_URI)
-  .then(async () => {
-    await ensureBaseCategories();
-    console.log('✅ Connected to MongoDB');
-  })
-  .catch(err => { console.error('❌ MongoDB connection error:', err); process.exit(1); });
+
+// في بيئة serverless (Vercel) الفنكشن ممكن تتنفذ أكتر من مرة، فلازم نكاش الاتصال
+// عشان منفتحش اتصال جديد بالداتابيز مع كل request (وده اللي بيسبب server error عشوائي)
+let isConnected = false;
+async function connectDB() {
+  if (isConnected) return;
+  await mongoose.connect(MONGO_URI);
+  isConnected = true;
+  await ensureBaseCategories();
+  console.log('✅ Connected to MongoDB');
+}
+
+// نتأكد إن الاتصال بالداتابيز حصل قبل ما أي route يتنفذ
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err);
+    res.status(500).json({ success: false, message: 'Database connection error.' });
+  }
+});
  
 
 const userSchema = new mongoose.Schema({
@@ -347,6 +362,12 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
  
-app.listen(PORT, () => {
-  console.log(` Server running at http://localhost:${PORT}`);
-});
+// لما تشغل المشروع محليًا (npm start) الشرط ده هيخليه يفتح سيرفر عادي.
+// على Vercel، Vercel نفسه بيستدعي الـ app كـ handler من غير ما يحتاج app.listen().
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
