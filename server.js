@@ -10,28 +10,16 @@ const ADMIN_KEY = process.env.ADMIN_KEY || 'yousef77';
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/login-app';
 
-// في بيئة serverless (Vercel) الفنكشن ممكن تتنفذ أكتر من مرة، فلازم نكاش الاتصال
-// عشان منفتحش اتصال جديد بالداتابيز مع كل request (وده اللي بيسبب server error عشوائي)
-let isConnected = false;
-async function connectDB() {
-  if (isConnected) return;
-  await mongoose.connect(MONGO_URI);
-  isConnected = true;
-  await ensureBaseCategories();
-  console.log('✅ Connected to MongoDB');
-}
+const mongooseOptions = {
+  serverSelectionTimeoutMS: 5000,
+  maxPoolSize: 1,
+};
 
-// نتأكد إن الاتصال بالداتابيز حصل قبل ما أي route يتنفذ
-app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (err) {
-    console.error('❌ MongoDB connection error:', err);
-    res.status(500).json({ success: false, message: 'Database connection error.' });
-  }
-});
- 
+// في بيئة serverless (Vercel) نكاش الاتصال على global عشان ما نفتحش اتصال جديد مع كل request
+let cached = global.mongoose;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
 
 const userSchema = new mongoose.Schema({
   name:     { type: String, required: true, trim: true },
@@ -90,10 +78,37 @@ async function ensureBaseCategories() {
     await Category.updateOne({ name }, { $setOnInsert: { name } }, { upsert: true });
   }
 }
- 
+
+async function connectDB() {
+  if (cached.conn) return cached.conn;
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGO_URI, mongooseOptions).then((m) => {
+      console.log('✅ Connected to MongoDB');
+      return m;
+    });
+  }
+
+  cached.conn = await cached.promise;
+  await ensureBaseCategories();
+  return cached.conn;
+}
+
 // ── Middleware ──────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// نتأكد إن الاتصال بالداتابيز حصل قبل ما أي route يتنفذ
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err);
+    res.status(500).json({ success: false, message: 'Database connection error.' });
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
  
 // ── Routes ──────────────────────────────────────────────────────
