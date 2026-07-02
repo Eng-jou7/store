@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>yousef clothes — Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#eef3ff;--card:#ffffff;--border:rgba(31,41,64,.10);--border2:rgba(31,41,64,.18);--accent:#6c63ff;--text:#1e2740;--muted:#63708a;--ok:#4ade80;--err:#f87171;--input:#f7f9ff}
+    html,body{min-height:100%;font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:1180px;margin:0 auto;padding:1.3rem 1rem 2rem}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:.7rem;flex-wrap:wrap;margin-bottom:1rem}
+    .actions{display:flex;gap:.5rem;flex-wrap:wrap}
+    .link,button{height:40px;border:none;border-radius:10px;padding:0 .95rem;font-family:inherit;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+    .link,button.primary{background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff}
+    button.secondary{background:#4f5e7a;color:#fff}
+    .panel{background:var(--card);border:1px solid var(--border2);border-radius:14px;padding:1rem}
+    .grid{display:grid;grid-template-columns:1fr 1.2fr;gap:1rem}
+    .title{font-size:1.1rem;margin-bottom:.75rem}
+    .field{margin-bottom:.6rem}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:.25rem}
+    input,textarea,select{width:100%;border:1px solid var(--border2);background:var(--input);color:var(--text);border-radius:10px;padding:.65rem .7rem;font-family:inherit}
+    textarea{min-height:76px;resize:vertical}
+    .msg{font-size:13px;margin-top:.45rem}
+    .msg.ok{color:var(--ok)} .msg.err{color:var(--err)}
+    table{width:100%;border-collapse:collapse}
+    th,td{font-size:13px;padding:.6rem;border-bottom:1px solid var(--border);text-align:right;vertical-align:top}
+    th{color:#d7d7eb}
+    .img{width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}
+    .table-wrap{overflow:auto}
+    .btn-row{display:flex;gap:.35rem;flex-wrap:wrap}
+    .mini{height:32px;padding:0 .65rem;border-radius:8px;font-size:12px}
+    @media(max-width:980px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <h1>لوحة تحكم الأدمن - إدارة المنتجات</h1>
+      <div class="actions">
+        <a class="link" href="/orders.html">طلبات العملاء</a>
+        <a class="link" href="/dashboard.html">صفحة المنتجات</a>
+        <button class="secondary" id="logout-btn" type="button">تسجيل خروج</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="panel">
+        <h2 class="title" id="form-title">إضافة منتج جديد</h2>
+        <form id="product-form" novalidate>
+          <input type="hidden" id="product-id"/>
+          <div class="field"><label for="name">اسم المنتج</label><input id="name" required/></div>
+          <div class="field"><label for="price">السعر (EGP)</label><input id="price" type="number" min="0" step="0.01" required/></div>
+          <div class="field"><label for="category">التصنيف</label>
+            <select id="category" required>
+              <option value="">اختر التصنيف</option>
+              <option value="new">new</option>
+              <option value="men">men</option>
+              <option value="women">women</option>
+              <option value="accessories">accessories</option>
+              <option value="__custom__">+ إضافة تصنيف</option>
+            </select>
+          </div>
+          <div class="field" id="custom-category-field" style="display:none">
+            <label for="custom-category">التصنيف الجديد</label>
+            <input id="custom-category" placeholder="مثال: shoes"/>
+          </div>
+          <div class="field"><label for="imageUrl">رابط الصورة</label><input id="imageUrl" type="url" placeholder="https://..." required/></div>
+          <div class="field"><label for="description">الوصف</label><textarea id="description" required></textarea></div>
+          <div class="btn-row">
+            <button class="primary" type="submit" id="save-btn">حفظ المنتج</button>
+            <button class="secondary" type="button" id="reset-btn">إلغاء التعديل</button>
+          </div>
+          <div class="msg" id="msg"></div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2 class="title">كل المنتجات</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>صورة</th><th>المنتج</th><th>السعر</th><th>التصنيف</th><th>إجراءات</th></tr>
+            </thead>
+            <tbody id="products-body">
+              <tr><td colspan="5">جاري تحميل المنتجات...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const adminKey = sessionStorage.getItem("adminKey");
+    if(!adminKey) window.location.href = "/admin.html";
+
+    const form = document.getElementById("product-form");
+    const body = document.getElementById("products-body");
+    const msg = document.getElementById("msg");
+    const title = document.getElementById("form-title");
+    const saveBtn = document.getElementById("save-btn");
+    const categoryEl = document.getElementById("category");
+    const customCategoryField = document.getElementById("custom-category-field");
+    const customCategoryEl = document.getElementById("custom-category");
+
+    function setMessage(text, type) {
+      msg.className = `msg ${type || ""}`;
+      msg.textContent = text || "";
+    }
+
+    function addCategoryOption(category) {
+      const value = String(category || "").trim().toLowerCase();
+      if (!value || value === "__custom__") return;
+      const exists = Array.from(categoryEl.options).some((opt) => opt.value === value);
+      if (exists) return;
+      const addOpt = categoryEl.querySelector('option[value="__custom__"]');
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value;
+      categoryEl.insertBefore(option, addOpt);
+    }
+
+    async function loadCategories() {
+      try {
+        const res = await fetch("/api/categories");
+        const data = await res.json();
+        if (!res.ok || !data.success || !Array.isArray(data.categories)) return;
+        data.categories.forEach(addCategoryOption);
+      } catch {
+        // Keep defaults if categories API fails.
+      }
+    }
+
+    function resetForm() {
+      form.reset();
+      document.getElementById("product-id").value = "";
+      categoryEl.value = "";
+      customCategoryEl.value = "";
+      customCategoryField.style.display = "none";
+      title.textContent = "إضافة منتج جديد";
+      saveBtn.textContent = "حفظ المنتج";
+      setMessage("", "");
+    }
+
+    function fillForm(product) {
+      document.getElementById("product-id").value = product._id;
+      document.getElementById("name").value = product.name;
+      document.getElementById("price").value = product.price;
+      addCategoryOption(product.category);
+      const hasOption = Array.from(categoryEl.options).some((opt) => opt.value === product.category);
+      if (hasOption) {
+        categoryEl.value = product.category;
+        customCategoryEl.value = "";
+        customCategoryField.style.display = "none";
+      } else {
+        categoryEl.value = "__custom__";
+        customCategoryEl.value = product.category || "";
+        customCategoryField.style.display = "block";
+      }
+      document.getElementById("imageUrl").value = product.imageUrl;
+      document.getElementById("description").value = product.description;
+      title.textContent = "تعديل المنتج";
+      saveBtn.textContent = "تحديث المنتج";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function esc(v) {
+      return String(v ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function renderProducts(products) {
+      if (!products.length) {
+        body.innerHTML = '<tr><td colspan="5">لا توجد منتجات حالياً.</td></tr>';
+        return;
+      }
+      body.innerHTML = products.map((p) => `
+        <tr>
+          <td><img class="img" src="${esc(p.imageUrl)}" alt="${esc(p.name)}" onerror="this.src='https://via.placeholder.com/120x120?text=No+Image'"/></td>
+          <td>${esc(p.name)}</td>
+          <td>${Number(p.price).toFixed(2)} EGP</td>
+          <td>${esc(p.category)}</td>
+          <td>
+            <div class="btn-row">
+              <button class="mini primary edit-btn" data-id="${p._id}" type="button">تعديل</button>
+              <button class="mini secondary delete-btn" data-id="${p._id}" type="button">حذف</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    async function loadProducts() {
+      try {
+        const res = await fetch("/api/products");
+        const data = await res.json();
+        if(!res.ok || !data.success) throw new Error(data.message || "فشل تحميل المنتجات.");
+        renderProducts(data.products);
+      } catch (err) {
+        body.innerHTML = `<tr><td colspan="5">${err.message || "حدث خطأ."}</td></tr>`;
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const productId = document.getElementById("product-id").value.trim();
+      const selectedCategory = categoryEl.value.trim();
+      const customCategory = customCategoryEl.value.trim().toLowerCase();
+      const finalCategory = selectedCategory === "__custom__" ? customCategory : selectedCategory;
+      const payload = {
+        name: document.getElementById("name").value.trim(),
+        price: Number(document.getElementById("price").value),
+        category: finalCategory,
+        imageUrl: document.getElementById("imageUrl").value.trim(),
+        description: document.getElementById("description").value.trim(),
+      };
+      if (!payload.name || !payload.category || !payload.imageUrl || !payload.description || Number.isNaN(payload.price)) {
+        setMessage("من فضلك املأ كل الحقول بشكل صحيح.", "err");
+        return;
+      }
+
+      try {
+        const url = productId ? `/api/products/${productId}` : "/api/products";
+        const method = productId ? "PUT" : "POST";
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if(!res.ok || !data.success) throw new Error(data.message || "فشل حفظ المنتج.");
+        addCategoryOption(finalCategory);
+        setMessage(productId ? "تم تحديث المنتج." : "تم إضافة المنتج.", "ok");
+        resetForm();
+        await loadProducts();
+      } catch (err) {
+        setMessage(err.message || "حدث خطأ أثناء الحفظ.", "err");
+      }
+    });
+
+    categoryEl.addEventListener("change", () => {
+      const isCustom = categoryEl.value === "__custom__";
+      customCategoryField.style.display = isCustom ? "block" : "none";
+      if (!isCustom) customCategoryEl.value = "";
+    });
+
+    body.addEventListener("click", async (e) => {
+      const editBtn = e.target.closest(".edit-btn");
+      const deleteBtn = e.target.closest(".delete-btn");
+      if (editBtn) {
+        try {
+          const res = await fetch(`/api/products/${editBtn.dataset.id}`);
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.message || "تعذر تحميل المنتج.");
+          fillForm(data.product);
+        } catch (err) {
+          setMessage(err.message || "حدث خطأ.", "err");
+        }
+      }
+      if (deleteBtn) {
+        const confirmed = window.confirm("هل تريد حذف المنتج؟");
+        if (!confirmed) return;
+        try {
+          const res = await fetch(`/api/products/${deleteBtn.dataset.id}`, {
+            method: "DELETE",
+            headers: { "x-admin-key": adminKey }
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.message || "فشل حذف المنتج.");
+          setMessage("تم حذف المنتج.", "ok");
+          await loadProducts();
+        } catch (err) {
+          setMessage(err.message || "حدث خطأ أثناء الحذف.", "err");
+        }
+      }
+    });
+
+    document.getElementById("reset-btn").addEventListener("click", resetForm);
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      sessionStorage.removeItem("adminKey");
+      window.location.href = "/admin.html";
+    });
+
+    loadCategories();
+    loadProducts();
+  </script>
+</body>
+</html>

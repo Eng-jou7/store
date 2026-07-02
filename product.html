@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>yousef clothes — Product</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#eef3ff;
+      --card:#ffffff;
+      --border:rgba(31,41,64,0.10);
+      --border2:rgba(31,41,64,0.18);
+      --accent:#6c63ff;
+      --accent2:#a78bfa;
+      --text:#1e2740;
+      --muted:#63708a;
+      --success:#4ade80;
+      --error:#f87171;
+      --input-bg:#f7f9ff;
+    }
+    html,body{min-height:100%;font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text)}
+    .bg-orbs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+    .orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.18;animation:float 12s ease-in-out infinite}
+    .orb1{width:500px;height:500px;background:#6c63ff;top:-100px;left:-100px}
+    .orb2{width:400px;height:400px;background:#a78bfa;bottom:-80px;right:-80px;animation-delay:-4s}
+    @keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(24px,-18px) scale(1.04)}}
+
+    .page{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:2rem 1.2rem}
+    .back-link{display:inline-flex;align-items:center;gap:.4rem;color:#4f5e7a;text-decoration:none;margin-bottom:1rem;font-size:14px}
+    .layout{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    .card{background:var(--card);border:1px solid var(--border2);border-radius:18px;padding:1rem}
+    .media{
+      height:260px;border-radius:12px;margin-bottom:.9rem;
+      background:linear-gradient(135deg,rgba(108,99,255,.2),rgba(167,139,250,.09)),
+                 repeating-linear-gradient(-45deg,rgba(255,255,255,.04),rgba(255,255,255,.04) 8px,transparent 8px,transparent 16px);
+      border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px
+    }
+    h1{font-size:1.4rem;margin-bottom:.35rem}
+    .muted{color:var(--muted);font-size:14px;line-height:1.7}
+    .price{margin-top:.8rem;font-size:1.2rem;font-weight:700;color:#f5f5ff}
+    .price span{font-size:13px;color:var(--muted);font-weight:500}
+
+    .form-title{font-size:1.2rem;margin-bottom:.6rem}
+    .field{margin-bottom:.75rem}
+    label{display:block;margin-bottom:.35rem;font-size:12px;color:var(--muted)}
+    input,textarea{
+      width:100%;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);
+      border-radius:10px;padding:.7rem .75rem;font-family:inherit;font-size:14px;outline:none
+    }
+    input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,99,255,.2)}
+    textarea{min-height:84px;resize:vertical}
+    .btn{
+      width:100%;height:46px;border:none;border-radius:10px;cursor:pointer;color:#fff;font-weight:700;
+      background:linear-gradient(135deg,var(--accent),#8b5cf6)
+    }
+    .alert{margin-top:.65rem;padding:.6rem .7rem;border-radius:10px;font-size:13px;display:none}
+    .alert.success{display:block;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.25);color:var(--success)}
+    .alert.error{display:block;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25);color:var(--error)}
+
+    @media(max-width:860px){.layout{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="bg-orbs">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+  </div>
+  <div class="page">
+    <a class="back-link" href="/dashboard.html">← الرجوع لصفحة المنتجات</a>
+    <div class="layout">
+      <section class="card">
+        <div class="media"><img id="product-image" alt="صورة المنتج" style="width:100%;height:100%;object-fit:cover;border-radius:10px;display:none"/></div>
+        <h1 id="product-name">اسم المنتج</h1>
+        <p class="muted" id="product-desc">وصف مختصر للمنتج.</p>
+        <div class="price" id="product-price">0 EGP <span>السعر شامل الضريبة</span></div>
+      </section>
+
+      <section class="card">
+        <h2 class="form-title">طريقة الطلب</h2>
+        <p class="muted" style="margin-bottom:.8rem">املأ البيانات التالية وسنتواصل معك لتأكيد الطلب.</p>
+        <form id="order-form" novalidate>
+          <div class="field">
+            <label for="name">الاسم</label>
+            <input id="name" type="text" placeholder="اكتب اسمك" required/>
+          </div>
+          <div class="field">
+            <label for="phone">رقم الهاتف</label>
+            <input id="phone" type="tel" placeholder="01xxxxxxxxx" required/>
+          </div>
+          <div class="field">
+            <label for="email">البريد الإلكتروني</label>
+            <input id="email" type="email" placeholder="you@example.com" required/>
+          </div>
+          <div class="field">
+            <label for="address">العنوان</label>
+            <textarea id="address" placeholder="اكتب العنوان بالتفصيل" required></textarea>
+          </div>
+          <button class="btn" type="submit">تأكيد الطلب</button>
+          <div class="alert" id="order-alert"></div>
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const query = new URLSearchParams(window.location.search);
+    const id = query.get("id");
+    let selected = null;
+
+    const form = document.getElementById("order-form");
+    const alertBox = document.getElementById("order-alert");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        productId: id,
+        productName: selected?.name || "",
+        price: selected?.price,
+        name: document.getElementById("name").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        address: document.getElementById("address").value.trim()
+      };
+
+      if(!selected){
+        alertBox.className = "alert error";
+        alertBox.textContent = "المنتج غير متاح الآن.";
+        return;
+      }
+
+      if(!payload.name || !payload.phone || !payload.email || !payload.address){
+        alertBox.className = "alert error";
+        alertBox.textContent = "من فضلك املأ كل البيانات المطلوبة.";
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          alertBox.className = "alert error";
+          alertBox.textContent = data.message || "حدث خطأ أثناء إرسال الطلب.";
+          return;
+        }
+
+        alertBox.className = "alert success";
+        alertBox.textContent = "تم إرسال الطلب بنجاح. سيتم التواصل معك قريبًا.";
+        form.reset();
+      } catch {
+        alertBox.className = "alert error";
+        alertBox.textContent = "تعذر الاتصال بالخادم. حاول مرة أخرى.";
+      }
+    });
+
+    (async function loadProduct() {
+      if (!id) {
+        alertBox.className = "alert error";
+        alertBox.textContent = "رابط المنتج غير صحيح.";
+        return;
+      }
+      try {
+        const res = await fetch(`/api/products/${id}`);
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || "تعذر تحميل المنتج.");
+        }
+        selected = data.product;
+        document.getElementById("product-name").textContent = selected.name;
+        document.getElementById("product-desc").textContent = selected.description;
+        document.getElementById("product-price").innerHTML = `${Number(selected.price).toFixed(2)} EGP <span>السعر شامل الضريبة</span>`;
+        const img = document.getElementById("product-image");
+        img.src = selected.imageUrl;
+        img.style.display = "block";
+      } catch (err) {
+        alertBox.className = "alert error";
+        alertBox.textContent = err.message || "تعذر تحميل المنتج.";
+      }
+    })();
+  </script>
+</body>
+</html>
